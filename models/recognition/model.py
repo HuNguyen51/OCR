@@ -15,11 +15,11 @@ import random
 class CNNBackbone(nn.Module):
     def __init__(self, output_dim=512):
         super(CNNBackbone, self).__init__()
-        # Sử dụng ResNet18 làm backbone hoặc xây dựng CNN từ đầu
-        # Ví dụ sử dụng ResNet18 đã pre-trained nhưng chỉ lấy phần feature extraction
-        resnet = models.resnet18(pretrained=True)
+        # Sử dụng ResNet (VGG16) làm backbone hoặc xây dựng CNN từ đầu
+        # Ví dụ sử dụng ResNet (VGG16) đã pre-trained nhưng chỉ lấy phần feature extraction
+        cnn = models.vgg16_bn(weights='DEFAULT')
         # Bỏ lớp fully connected cuối cùng
-        self.backbone = nn.Sequential(*list(resnet.children())[:-2])
+        self.backbone = nn.Sequential(*list(cnn.children())[:-2])
         
         # Projection layer để biến đổi feature map thành dạng phù hợp với transformer
         self.projection = nn.Conv2d(512, output_dim, kernel_size=1)
@@ -198,7 +198,7 @@ class OCRModel(nn.Module):
         )
         
         self.vocab_size = vocab_size
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.device = torch.device('mps')
     
     def forward(self, img, tgt, tgt_mask=None, tgt_padding_mask=None, return_attention=False):
         # img shape: [batch_size, channels, height, width]
@@ -216,6 +216,7 @@ class OCRModel(nn.Module):
                 return_attention=True
             )
             return output, img_features, attentions
+        
         else:
             output = self.transformer_decoder(
                 tgt, img_features, tgt_mask=tgt_mask, 
@@ -267,16 +268,11 @@ class OCRModel(nn.Module):
                     break
             
             # Chuyển đổi indices thành ký tự
-            results = []
+            texts = []
             for predict_seq in ys.cpu().numpy():
-                result=[]
-                for idx in predict_seq:
-                    if idx == vocabulary.char2idx['<eos>']:
-                        break
-                    if idx == vocabulary.char2idx['<sos>']:
-                        continue
-                    result.append(vocabulary.idx2char[idx])
-                results.append(result)
+                text = vocabulary.decode(predict_seq)
+                texts.append(text)
+
             # Stack attention weights vào tensor
             if all_cross_attentions:
                 # all_cross_attentions: max_len, batch_size, attention_weights
@@ -284,7 +280,7 @@ class OCRModel(nn.Module):
             else:
                 all_cross_attentions = torch.tensor([])
             
-            return [''.join(r) for r in results], img_features, all_cross_attentions
+            return texts, img_features, all_cross_attentions
     
     def visualize_attention(self, img, text, text_generated, img_features, attention_weights=None):
         if text != '':
@@ -294,7 +290,7 @@ class OCRModel(nn.Module):
         self.eval()
         
         # Reshape lại feature map để có thể hiển thị
-        feature_size = int(math.sqrt(img_features.size(1)))
+        # feature_size = int(math.sqrt(img_features.size(1)))
         
         plt.figure(figsize=(15, 10))
         
@@ -303,7 +299,7 @@ class OCRModel(nn.Module):
         # Chuyển tensor sang numpy để hiển thị
         img_np = img.cpu().squeeze(0).permute(1, 2, 0).numpy()
         # Unnormalize ảnh
-        img_np = img_np * np.array([0.229, 0.224, 0.225]) + np.array([0.485, 0.456, 0.406])
+        # img_np = img_np * np.array([0.229, 0.224, 0.225]) + np.array([0.485, 0.456, 0.406])
         img_np = np.clip(img_np, 0, 1)
         plt.imshow(img_np)
         plt.title("Original Image")
@@ -316,10 +312,10 @@ class OCRModel(nn.Module):
             avg_attention = attention_weights.mean(0)
             
             # Reshape lại thành grid để dễ visualize
-            attention_map = avg_attention.reshape(feature_size, feature_size).cpu().numpy()
+            # attention_map = avg_attention.reshape(feature_size, feature_size).cpu().numpy()
             
             # Hiển thị attention map
-            plt.imshow(attention_map, cmap='hot')
+            plt.imshow(avg_attention.cpu(), cmap='hot')
             plt.title(f"Attention Heatmap for text:")
             plt.colorbar()
         else:

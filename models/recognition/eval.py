@@ -1,5 +1,6 @@
 import torch
 from tqdm.notebook import tqdm
+from models.recognition.metrics import compute_accuracy
 
 # Hàm đánh giá mô hình
 def evaluate(model, val_loader, criterion, device, vocabulary):
