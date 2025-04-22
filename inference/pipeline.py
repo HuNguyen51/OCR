@@ -1,12 +1,10 @@
 import torch
 import cv2
 import numpy as np
-from models.detection.utils import resize_and_pad, transform, four_point_transform
+from modules.detection.utils import resize_and_pad, transform, four_point_transform
 from utils.visualization import imshow, bi_imshow
-from doctr.models import db_mobilenet_v3_large, db_resnet50
 
-from models.recognition.utils import transform as recognition_transform
-from PIL import Image
+from modules.recognition.utils import process_image as recognition_transform
 
 class Task:
     detection = 'text_detection'
@@ -145,8 +143,8 @@ class Pipe:
     def __generate_text(self, model, image, vocab):
         image = recognition_transform(image)
     
-        model = model.to('cpu')
-        image = image.to('cpu')
+        model = model.to(model.device)
+        image = image.to(model.device)
 
         pred_txt, _ ,_  = model.generate_text(image.unsqueeze(0), vocab)
         return pred_txt[0], None, None
@@ -154,8 +152,8 @@ class Pipe:
     def __generate_text_random(self, model, vocab, loader):
         img, txt, path = loader.get_random_image()
 
-        model = model.to('cpu')
-        img = img.to('cpu')
+        model = model.to(model.device)
+        img = img.to(model.device)
 
         pred_txt, _ ,_  = model.generate_text(img.unsqueeze(0), vocab)
         return pred_txt[0], txt, path
@@ -163,8 +161,8 @@ class Pipe:
     def __visualize_attention(self, model, image, vocab):
         image = recognition_transform(image)
 
-        model = model.to('cpu')
-        image = image.to('cpu')
+        model = model.to(model.device)
+        image = image.to(model.device)
 
         pred_txt, f ,a  = model.generate_text(image.unsqueeze(0), vocab)
         model.visualize_attention(image, '', pred_txt[0], f, a)
@@ -173,8 +171,8 @@ class Pipe:
     def __visualize_attention_random(self, model, vocab, loader):
         img, txt, path = loader.get_random_image()
 
-        model = model.to('cpu')
-        img = img.to('cpu')
+        model = model.to(model.device)
+        img = img.to(model.device)
 
         pred_txt, f ,a  = model.generate_text(img.unsqueeze(0), vocab)
         model.visualize_attention(img, txt, pred_txt[0], f, a)

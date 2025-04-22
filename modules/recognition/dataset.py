@@ -2,7 +2,7 @@ from torch.utils.data import Dataset
 import torch
 from PIL import Image
 import random
-from models.recognition.utils import resize
+from modules.recognition.utils import resize
 from configs.recognition_config import image_height, image_max_width, image_min_width
 from tqdm.notebook import tqdm
 from torch.utils.data.sampler import Sampler

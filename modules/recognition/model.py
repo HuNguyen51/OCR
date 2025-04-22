@@ -198,7 +198,12 @@ class OCRModel(nn.Module):
         )
         
         self.vocab_size = vocab_size
-        self.device = torch.device('mps')
+
+        self.device = self.__set_device()
+
+    def __set_device(self):
+        from configs.recognition_config import device
+        return device
     
     def forward(self, img, tgt, tgt_mask=None, tgt_padding_mask=None, return_attention=False):
         # img shape: [batch_size, channels, height, width]
@@ -227,9 +232,10 @@ class OCRModel(nn.Module):
     def generate_text(self, img, vocabulary, max_length=100):
         # Dùng để dự đoán văn bản từ ảnh
         self.eval()
-        
+        self.to(self.device)
         with torch.no_grad():
             # Trích xuất đặc trưng ảnh
+            img = img.to(self.device)
             img_features = self.cnn_backbone(img)
             # img_features: [batch_size, h*w, d_model]
             

@@ -2,7 +2,7 @@ from torch.utils.data import Dataset, DataLoader
 import cv2
 import numpy as np
 import torch
-from models.detection.utils import generate_quad, resize_and_pad, transform, generate_score_mask
+from modules.detection.utils import generate_quad, resize_and_pad, transform, generate_score_mask
    
 from configs.detection_config import target_size
 
